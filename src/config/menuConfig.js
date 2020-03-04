@@ -1,0 +1,46 @@
+const menuList = [
+    {
+        title:'图书管理',
+        key:'/bookManage',
+        icon:'book',
+    },
+    {
+        title:'借阅管理',
+        key:'/borrowManage',
+        icon:'desktop',
+    },
+    {
+        title:'个人信息管理',
+        key:'/infoManage',
+        icon:'user',
+    },
+    {
+        title:'统计分析',
+        key:'/chart',
+        icon:'pie-chart',
+        children:[
+            {
+                title:'各时期图书馆藏量',
+                key:'/bookStore',
+                icon:'bar-chart',
+            },
+            {
+                title:'各时期分类馆藏量',
+                key:'/typeStore',
+                icon:'area-chart',
+            },
+            {
+                title:'读者数量变化趋势',
+                key:'/readerNumber',
+                icon:'line-chart',
+            },
+            {
+                title:'已借借阅比例分布',
+                key:'/borrowRatio',
+                icon:'radar-chart',
+            }
+        ]
+    }
+]
+
+export default menuList;

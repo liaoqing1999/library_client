@@ -1,24 +1,62 @@
 import React,{ Component } from "react";
-import { reqBookTypeAll, reqBooks, reqTypeName } from "../../api";
-import { Tree, Icon,Table, Button,Input } from 'antd';
-import Highlighter from 'react-highlight-words';
+import { reqBookTypeAll, reqBooks, reqEBooks } from "../../api";
+import { Tree, Icon,Input,Tabs,} from 'antd';
+import { StickyContainer, Sticky } from 'react-sticky';
 import './bookType.less'
-import MyTable from "../../utils/table";
+import MyTable from "../../utils/myTable"
 
+import Test from "./tableTest";
+
+const { Search } = Input;
 const { TreeNode } = Tree;
+const { TabPane } = Tabs;
 
+const datas = []
+const renderTabBar = (props, DefaultTabBar) => (
+  <Sticky bottomOffset={80}>
+    {({ style }) => (
+      <DefaultTabBar {...props} className="site-custom-tab-bar" style={{ ...style }} />
+    )}
+  </Sticky>
+);
 export default class BookType extends Component{
     state = {
         treeData: [],        //树数据
-        selectedRowKeys: [], // 已选列
-        loading: false,      //是否加载
-        pageSize:10,         //表页大小
-        totals:0,            //表数据总量
-        pageNum:1,           //第几页
-        tableData : [],      //表数据
-        filters:[],          //条件
+        expandedKeys: [],
+        searchValue: '',
+        autoExpandParent: true,
+        dataList:[],
+        filters:[],
+        selectedKeys:'',
+      
     }
-    
+    onExpand = expandedKeys => {
+      this.setState({
+        expandedKeys,
+        autoExpandParent: false,
+      });
+    };
+    //树收索事件
+    onChange = e => {
+      const { value } = e.target;
+      const expandedKeys =datas.map(item => {
+          if (item.title.indexOf(value) > -1) {
+            return item.pid;
+          }
+          return null;
+        })
+        .filter((item, i, self) => item && self.indexOf(item) === i);
+      let s =[]
+      if(value ===''){
+      }else{
+        s= expandedKeys
+      }
+      this.setState({
+        expandedKeys:s,
+        searchValue: value,
+        autoExpandParent: true,
+      });
+    };
     //获取某节点的孩子节点
     getChiled = (data,id) => {
         const c = []; 
@@ -39,11 +77,12 @@ export default class BookType extends Component{
     //将类型数据转换成树数据
     generateData = (data) => {
       const dataList = []
+      
         for (let i = 0; i < data.length; i++) {
             const node = data[i];
             const { id,name,pid } = node;
             let children = [];
-            
+            datas.push({title:name,key:id,pid:pid})
             if(pid ==='0'){
                 children = this.getChiled(data,id)
                 dataList.push({ key:id, title: name ,children :children});
@@ -51,18 +90,65 @@ export default class BookType extends Component{
         }
     this.setState({treeData:dataList})
     };
+
+    //树点击事件
+    onSelect = (selectedKeys, e) =>{
+      
+      if(selectedKeys[0]&&selectedKeys[0]!==this.state.selectedKeys){
+        const ids = []
+        if(e.node.props.children){
+          e.node.props.children.forEach(item =>{
+            ids.push(item.key)
+          })
+        }
+        ids.push(selectedKeys[0])
+        
+        var filters={
+          groupOp:"AND",
+              rules:[
+                 {field:"typeId",op:"in",data:ids} 
+              ]
+        }
+        setTimeout(() =>{
+          this.setState({filters:filters,selectedKeys:selectedKeys})
+        },0)
+       
+      }else{
+       
+        setTimeout(() =>{
+          this.setState({filters:[],selectedKeys:""})
+        },0)
+      }
+     
+    }
+    
     //循环返回树形语句
     loop = data =>{
+      const { searchValue} = this.state;
         return data.reduce((pre,item)=>{
+          
+          const index = item.title.indexOf(searchValue);
+          const beforeStr = item.title.substr(0, index);
+          const afterStr = item.title.substr(index + searchValue.length);
+          const title =
+            index > -1 ? (
+              <span>
+                {beforeStr}
+                <span className="site-tree-search-value">{searchValue}</span>
+                {afterStr}
+              </span>
+            ) : (
+              <span>{item.title}</span>
+            );
             if(item.children){
                 pre.push((
-                    <TreeNode icon={<Icon type="folder" theme="twoTone" />} key={item.key} title={item.title} >
+                    <TreeNode icon={<Icon type="folder" theme="twoTone" />} key={item.key} title={title} >
                     {this.loop(item.children)}
                   </TreeNode>
                     ))
             }else{
                 pre.push((
-                    <TreeNode icon={<Icon type="book" theme="twoTone" />} key={item.key} title={item.title} />
+                    <TreeNode icon={<Icon type="book" theme="twoTone" />} key={item.key} title={title} />
                 ))
             }  
             
@@ -72,15 +158,20 @@ export default class BookType extends Component{
     //获取 类型数据
     getBookTypes =async () =>{
         const bookTypes = await reqBookTypeAll()
+        
         if(bookTypes){
             this.generateData(bookTypes.data)
         }
        
     }
-
-  getDates = async (page,rows,sidx,sord,cond) =>{
-    console.log("1111")
+  //书籍表
+  getBookDates = async (page,rows,sidx,sord,cond) =>{
     const datas = await reqBooks(page,rows,sidx,sord,cond)
+    return datas;
+  }
+  //电子书籍表
+  getEBookDates = async (page,rows,sidx,sord,cond) =>{
+    const datas = await reqEBooks(page,rows,sidx,sord,cond)
     return datas;
   }
   //render前事件
@@ -88,6 +179,7 @@ export default class BookType extends Component{
         this.getBookTypes()
         //this.getBooks(this.state.pageNum,this.state.pageSize)
     }
+ 
     render(){
        
         const columns = [
@@ -105,6 +197,7 @@ export default class BookType extends Component{
             fixed: 'left',
             key: 'bookName',
             width: 100,
+            render: text => <a>{text}</a>,
            
           },
           {
@@ -151,25 +244,84 @@ export default class BookType extends Component{
           },
           
         ];
+        const columns1 =[
+          {
+            title: 'id',
+            fixed: 'left',
+            width: 80,
+            dataIndex: 'id',
+            key: 'id',
+          
+          },
+          {
+            title: '书名',
+            dataIndex: 'ebookName',
+            fixed: 'left',
+            key: 'ebookName',
+            width: 100,
+            render: text => <a>{text}</a>,
+          },
+          {
+            title: '描述',
+            dataIndex: 'des',
+            key: 'des',
+
+            render: text => <div dangerouslySetInnerHTML={{__html:text}}></div>,
+          },
+          {
+            title: '作者',
+            dataIndex: 'writer',
+            key: 'writer',
+            width: 80,
+          },
+          {
+            title: '热度',
+            dataIndex: 'hot',
+            key: 'hot',
+            width: 80,
+          },
+        ]
         return (
             <div className="bookType"> 
+
             <div className="bookType-typeTree"> 
                 {
             this.state.treeData.length ? (
+              <div>
+                <Search style={{ marginBottom: 8 }} placeholder="Search" onChange={this.onChange} />
                 <Tree
                 showIcon
                 switcherIcon={<Icon type="down" />}
+                onExpand={this.onExpand}
+                expandedKeys={this.state.expandedKeys}
+                autoExpandParent={this.state.autoExpandParent}
+                onSelect = {this.onSelect}
                 > 
                 {this.loop(this.state.treeData)}
                 </Tree>
+              </div>
             ) : (
                 'loading tree'
             )
             }
           </div>
           <div className="bookType-bookTable">
-          
-          <MyTable columns={columns} getDates ={this.getDates}></MyTable>
+          <StickyContainer>
+            <Tabs defaultActiveKey="1" renderTabBar={renderTabBar} >
+              <TabPane tab={<span><Icon type="book" theme="twoTone"/>实体书</span>} key="1" style={{ height: "80%" }}>
+                <MyTable add={this.bookAdd} view={this.bookView} delete={this.bookDelete} edit={this.bookEdit} 
+                filters={this.state.filters} columns={columns} getDates ={this.getBookDates}></MyTable>
+              </TabPane>
+              <TabPane  tab={<span><Icon type="account-book" theme="twoTone" />电子书</span>} key="2">
+                <MyTable add={this.ebookAdd} view={this.ebookView} delete={this.ebookDelete} edit={this.ebookEdit} 
+                filters={this.state.filters} columns={columns1} getDates ={this.getEBookDates}></MyTable>
+              </TabPane>
+              <TabPane  tab={<span><Icon type="account-book" theme="twoTone" />测试</span>} key="3">
+                <Test></Test>
+              </TabPane>
+            </Tabs>
+          </StickyContainer>
+         
         </div>
         </div>
         )

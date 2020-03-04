@@ -35,6 +35,8 @@ export const reqBookTypeAll = () => ajax2('/bookType/all',{},'GET')
 //获取书籍信息
 export const reqBooks = (page,rows,sidx,sord,cond) => ajax2('/book',{page,rows,sidx,sord,cond},'GET')
 
+//获取电子书籍信息
+export const reqEBooks = (page,rows,sidx,sord,cond) => ajax2('/ebook',{page,rows,sidx,sord,cond},'GET')
 
 //根据类别id获取类别信息
 export const reqTypeName = (typeId) => ajax2('/bookType/typeName',{typeId},'GET')

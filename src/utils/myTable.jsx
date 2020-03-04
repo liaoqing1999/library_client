@@ -1,7 +1,7 @@
 import React,{ Component } from "react";
-import { Table, Button,Input } from 'antd';
+import { Table, Button,Input,Switch,Popover,Icon,Tooltip, message,Modal } from 'antd';
 import Highlighter from 'react-highlight-words';
-
+const { confirm } = Modal;
 export default class MyTable extends Component{
    
      state = {
@@ -11,7 +11,8 @@ export default class MyTable extends Component{
         totals:0,            //表数据总量
         pageNum:1,           //第几页
         tableData : [],      //表数据
-        filters:[],          //条件
+        filters:this.props.filters,          //条件
+        search:true,
     }
     paginationProps = {
         showSizeChanger: true,
@@ -39,7 +40,7 @@ export default class MyTable extends Component{
       }
     //获取表中书籍数据
     getDatas =async (page,rows,sidx,sord,cond) =>{
-       console.log(page,rows,sidx,sord,cond)
+      
         const datas = await this.props.getDates(page,rows,sidx,sord,cond)
         const data = [];
         if(datas){
@@ -55,7 +56,7 @@ export default class MyTable extends Component{
             this.setState({ tableData: data ,totals: datas.data.total});
         }
     }
-    //加载定时器
+    //取消选中
     start = () => {
         this.setState({ loading: true });
         // ajax request after empty completing
@@ -98,8 +99,7 @@ export default class MyTable extends Component{
             </Button>
           </div>
         ),
-        render: text =>
-          this.state.searchedColumn === dataIndex ? (
+        render: text =>this.state.searchedColumn === dataIndex ? (
             <Highlighter
               highlightStyle={{ backgroundColor: '#ffc069', padding: 0 }}
               searchWords={[this.state.searchText]}
@@ -109,6 +109,7 @@ export default class MyTable extends Component{
           ) : (
             text
           ),
+        
       });
   //搜索处理事件
   handleSearch = (selectedKeys, confirm, dataIndex) => {
@@ -125,13 +126,13 @@ export default class MyTable extends Component{
       searchText: selectedKeys[0],
       searchedColumn: dataIndex,
     });
-    console.log(filters)
+  
     this.getDatas(this.state.pageNum,this.state.pageSize,'','',JSON.stringify({filters:filters}))
    
   };
   //取消事件
   handleReset = clearFilters => {
-    console.log(clearFilters)
+    
     clearFilters();
     this.setState({ searchText: '' , filters:[],});
     this.getDatas(this.state.pageNum,this.state.pageSize)
@@ -140,17 +141,71 @@ export default class MyTable extends Component{
     componentDidMount(){
         this.getDatas(this.state.pageNum,this.state.pageSize)
     };
+    //接收父组件属性前
+    componentWillReceiveProps(nextProps){
+      this.setState({filters:nextProps.filters})
+      this.getDatas(this.state.pageNum,this.state.pageSize,'','',JSON.stringify({filters:nextProps.filters}))
+    }
+     //switch 改变事件
+    switchChange = (checked,event) =>{
+      this.setState({search:checked})
+    }
+    //edit
+    edit = () =>{
+      if(this.state.selectedRowKeys.length===0){
+        message.error("未选中表格行")
+      }else{
+        const d =this.state.tableData.find((data) =>(data.id===this.state.selectedRowKeys[0]))
+        this.props.edit(d)
+      }
+    }
+    //view
+    view = () =>{
+      if(this.state.selectedRowKeys.length===0){
+        message.error("未选中表格行")
+      }else{
+        const d =this.state.tableData.find((data) =>(data.id===this.state.selectedRowKeys[0]))
+        this.props.view(d)
+      }
+    }
+    //delete
+    delete = () =>{
+      if(this.state.selectedRowKeys.length===0){
+        message.error("未选中表格行")
+      }else{
+        confirm({
+          title: '确定要删除这些数据吗?',
+          icon: <Icon type="warning" />,
+          content: '这会导致某些数据的丢失',
+          okText: '确定',
+          okType: 'danger',
+          cancelText: '取消',
+          onOk() {
+            this.props.delete(this.state.selectedRowKeys)
+          },
+          onCancel() {
+            console.log('Cancel');
+          },
+        });
+      }
+    }
     render(){
     const c =[ ];
     this.props.columns.forEach(item=>{
-       c.push({
-            title: item.title,
-            fixed: item.fixed,
-            width: item.width,
-            dataIndex:  item.dataIndex,
-            key: item.key,
-            ...this.getColumnSearchProps(item.key),
-       })
+      if(!this.state.search){
+        c.push(item)
+      }else{
+        c.push({
+          title: item.title,
+          fixed: item.fixed,
+          width: item.width,
+          dataIndex:  item.dataIndex,
+          key: item.key,
+          render:item.render,
+          ...this.getColumnSearchProps(item.key),
+        })
+      }
+      
     })
     const { loading, selectedRowKeys } = this.state;
     const rowSelection = {
@@ -160,15 +215,38 @@ export default class MyTable extends Component{
     const hasSelected = selectedRowKeys.length > 0;
     return (
         <div>
-            <div style={{ marginBottom: 16 }}>
+        <Table 
+         scroll={{ x: 1100, y: 380 }} 
+         pagination={this.paginationProps} 
+         rowKey={record =>record.id} 
+         rowSelection={rowSelection} 
+         size="middle"
+         columns={c} dataSource={this.state.tableData} 
+         title={() =>
+          <div>
             <Button type="primary" onClick={this.start} disabled={!hasSelected} loading={loading}>
-            Reload
+            清空
             </Button>
-            <span style={{ marginLeft: 8 }}>
-            {hasSelected ? `Selected ${selectedRowKeys.length} items` : ''}
-            </span>
-        </div>
-        <Table  scroll={{ x: 1200, y: 380 }} pagination={this.paginationProps} rowKey={record =>record.id} rowSelection={rowSelection} columns={c} dataSource={this.state.tableData} />
+            <Tooltip placement="top" title={"新增"}>
+              <Button size="large" type="link" shape="circle" onClick={this.props.add}> <Icon type="plus-circle" theme="twoTone" /></Button>
+            </Tooltip>
+            <Tooltip placement="top" title={"修改"}>
+              <Button size="large"  type="link" shape="circle" onClick={this.edit}> <Icon type="edit" theme="twoTone" /></Button>
+            </Tooltip>
+            <Tooltip placement="top" title={"查看"}>
+              <Button size="large" type="link" shape="circle" onClick={this.view}> <Icon type="profile" theme="twoTone" /></Button>
+            </Tooltip>
+            <Tooltip placement="top" title={"删除"}>
+              <Button  size="large" type="link" shape="circle" onClick={this.delete}><Icon type="delete" theme="twoTone" /></Button>
+            </Tooltip>
+            <div style={{float:"right"}}>
+            <Popover title="是否开启搜索功能" trigger="hover">
+              <Switch checkedChildren="开" unCheckedChildren="关" defaultChecked onChange={this.switchChange}/>
+            </Popover>
+            </div>
+          </div>
+            }
+         />
         </div>
         )
     }

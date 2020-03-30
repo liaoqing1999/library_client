@@ -2,7 +2,7 @@ import React,{Component} from 'react'
 import './index.less'
 import logo from '../../assets/book.svg'
 import {Link , withRouter} from 'react-router-dom'
-import { Menu, Icon } from 'antd';
+import { Menu} from 'antd';
 import menuList from '../../config/menuConfig';
 
 const { SubMenu } = Menu;
@@ -17,7 +17,7 @@ const { SubMenu } = Menu;
                 return (
                     <Menu.Item key = {item.key}>
                         <Link to={item.key}>
-                            <Icon type={item.icon}></Icon>
+                            {item.icon}
                             <span>{item.title}</span>
                         </Link>
                     </Menu.Item>
@@ -26,7 +26,7 @@ const { SubMenu } = Menu;
                 return (
                     <SubMenu key={item.key} title={
                         <span>
-                            <icon type={item.icon}></icon>
+                            {item.icon}
                             <span>{item.title}</span>
                         </span>
                     }>
@@ -46,7 +46,7 @@ const { SubMenu } = Menu;
                 pre.push((
                         <Menu.Item key = {item.key}>
                         <Link to={item.key}>
-                            <Icon type={item.icon}></Icon>
+                            {item.icon}
                             <span>{item.title}</span>
                         </Link>
                         </Menu.Item>
@@ -60,7 +60,7 @@ const { SubMenu } = Menu;
                 pre.push((
                         <SubMenu key={item.key} title={
                             <span>
-                                <Icon type={item.icon}></Icon>
+                                {item.icon}
                                 <span>{item.title}</span>
                             </span>
                         }>

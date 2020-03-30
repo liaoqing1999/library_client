@@ -41,3 +41,6 @@ export const reqEBooks = (page,rows,sidx,sord,cond) => ajax2('/ebook',{page,rows
 //根据类别id获取类别信息
 export const reqTypeName = (typeId) => ajax2('/bookType/typeName',{typeId},'GET')
 
+//文件上传 图片
+export const reqImageUpload = (formData) =>ajax2('/file',{formData},'POST')
+

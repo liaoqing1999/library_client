@@ -1,37 +1,30 @@
 import React, { Component } from "react";
 import './login.less';
 import logo from '../../assets/book.svg'
-import { Form, Icon, Input, Button,  message } from 'antd';
+import { Form,Checkbox, Input, Button,  message } from 'antd';
 import {reqLogin, reqLoginUser} from '../../api/index'
 import memoryUtils from "../../utils/memoryUtils";
 import storageUtils from "../../utils/storageUtils";
 import {Redirect} from 'react-router-dom'
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
 
 export class Login extends Component{
-    handleSubmit = (event) => {
+    handleSubmit = async(values) => {
         //阻止事件的默认行为
-        event.preventDefault()
-       
-        this.props.form.validateFields(async (err, values) => {
-            if (!err) {
-             
-              const {account,password} = values;
-              try {
-                await reqLogin(account,password)
-                message.success("登陆成功")
-                reqLoginUser(account).then(response =>{
-                    const user = response.data
-                    memoryUtils.user =  user //保存在内存中
-                    storageUtils.savaUser(user)
-                    this.props.history.replace('/')
-                })
-               
-              } catch (error) {
-                message.error("用户名或密码错误")
-              }
-            
-            }
-          });
+        //event.preventDefault()
+        const {account,password} = values;
+        try {
+        await reqLogin(account,password)
+        message.success("登陆成功")
+        reqLoginUser(account).then(response =>{
+            const user = response.data
+            memoryUtils.user =  user //保存在内存中
+            storageUtils.savaUser(user)
+            this.props.history.replace('/')
+        }) 
+        } catch (error) {
+        message.error("用户名或密码错误")
+        }
     }
    
     render(){
@@ -40,8 +33,8 @@ export class Login extends Component{
         if(user&&user.id){
             return <Redirect to = '/' />
         }
-        const form = this.props.form;
-        const { getFieldDecorator } = form;
+        //const form = this.props.form;
+        //const { getFieldDecorator } = form;
         return (
             <div className="login">
                 <header className="login-header">
@@ -51,46 +44,43 @@ export class Login extends Component{
                 <section className="login-content">
                     <h2>用户登录</h2>
                     <div>
-                        <Form onSubmit={this.handleSubmit} className="login-form">
+                         <Form
+                        name="normal_login"
+                        className="login-form"
+                        initialValues={{ remember: true }}
+                        onFinish={this.handleSubmit}
+                        >
+                        <Form.Item
+                            name="account"
+                            rules={[{ required: true, message: 'Please input your Account!' }]}
+                        >
+                            <Input prefix={<UserOutlined className="site-form-item-icon" />} placeholder="Account" />
+                        </Form.Item>
+                        <Form.Item
+                            name="password"
+                            rules={[{ required: true, message: 'Please input your Password!' }]}
+                        >
+                            <Input
+                            prefix={<LockOutlined className="site-form-item-icon" />}
+                            type="password"
+                            placeholder="Password"
+                            />
+                        </Form.Item>
                         <Form.Item>
-                            {
-                                getFieldDecorator('account',{
-                                    rules: [
-                                        { required: true,message: '用户名不能为空！' },
-                                        {pattern:/^[a-zA-Z0-9_]+$/,message:'用户名必须是英文、数字或下划线组成'}
+                            <Form.Item name="remember" valuePropName="checked" noStyle>
+                            <Checkbox>记住密码</Checkbox>
+                            </Form.Item>
 
-                                    ],
-                                })(
-                                    <Input
-                                    prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
-                                    placeholder="Username"
-                                />
-                                )
-                            }
-                          
+                            <a className="login-form-forgot" href="">
+                           忘记密码
+                            </a>
                         </Form.Item>
-                        <Form.Item>
-                            {
-                                getFieldDecorator('password',{
-                                    rules: [
-                                        { required: true, whitespace:true, message: '密码不能为空！' },
-                                       
-                                    ],
-                                
-                                })(
-                                    <Input
-                                    prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />}
-                                    type="password"
-                                    placeholder="Password"
-                                     />
-                                )
-                            }
-                            
-                        </Form.Item>
+
                         <Form.Item>
                             <Button type="primary" htmlType="submit" className="login-form-button">
                             登录
                             </Button>
+                            Or <a href="">立即注册!</a>
                         </Form.Item>
                         </Form>
                     </div>
@@ -100,8 +90,7 @@ export class Login extends Component{
     }
 }
 
-const WrapLogin = Form.create()(Login)
-export default WrapLogin
+export default Login
 
 /*
 async和await

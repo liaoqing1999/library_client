@@ -1,7 +1,9 @@
 import React,{ Component } from "react";
-import { Table, Button,Input,Switch,Popover,Icon,Tooltip, message,Modal } from 'antd';
+import {Table, Button,Input,Switch,Popover,Tooltip, message,Modal } from 'antd';
 import Highlighter from 'react-highlight-words';
+import { WarningOutlined, PlusCircleTwoTone,EditTwoTone,ProfileTwoTone,DeleteTwoTone } from '@ant-design/icons';
 const { confirm } = Modal;
+
 export default class MyTable extends Component{
    
      state = {
@@ -175,7 +177,7 @@ export default class MyTable extends Component{
       }else{
         confirm({
           title: '确定要删除这些数据吗?',
-          icon: <Icon type="warning" />,
+          icon: <WarningOutlined />,
           content: '这会导致某些数据的丢失',
           okText: '确定',
           okType: 'danger',
@@ -224,20 +226,20 @@ export default class MyTable extends Component{
          columns={c} dataSource={this.state.tableData} 
          title={() =>
           <div>
-            <Button type="primary" onClick={this.start} disabled={!hasSelected} loading={loading}>
+            <Button type="primary" onClick={this.start} disabled={!hasSelected} loading={loading} style={{marginRight:"10px"}}>
             清空
             </Button>
             <Tooltip placement="top" title={"新增"}>
-              <Button size="large" type="link" shape="circle" onClick={this.props.add}> <Icon type="plus-circle" theme="twoTone" /></Button>
+              <Button size="large" type="link" shape="circle" onClick={this.props.add}><PlusCircleTwoTone /></Button>
             </Tooltip>
             <Tooltip placement="top" title={"修改"}>
-              <Button size="large"  type="link" shape="circle" onClick={this.edit}> <Icon type="edit" theme="twoTone" /></Button>
+              <Button size="large"  type="link" shape="circle" onClick={this.edit}> <EditTwoTone /></Button>
             </Tooltip>
             <Tooltip placement="top" title={"查看"}>
-              <Button size="large" type="link" shape="circle" onClick={this.view}> <Icon type="profile" theme="twoTone" /></Button>
+              <Button size="large" type="link" shape="circle" onClick={this.view}> <ProfileTwoTone /></Button>
             </Tooltip>
             <Tooltip placement="top" title={"删除"}>
-              <Button  size="large" type="link" shape="circle" onClick={this.delete}><Icon type="delete" theme="twoTone" /></Button>
+              <Button  size="large" type="link" shape="circle" onClick={this.delete}><DeleteTwoTone /></Button>
             </Tooltip>
             <div style={{float:"right"}}>
             <Popover title="是否开启搜索功能" trigger="hover">
